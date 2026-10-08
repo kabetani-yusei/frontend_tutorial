@@ -1,144 +1,85 @@
-import DeleteIcon from '@mui/icons-material/Delete';
-import SendIcon from '@mui/icons-material/Send';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Container,
-  CssBaseline,
-  IconButton,
-  Stack,
-  TextField,
-  Typography
-} from '@mui/material';
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react'
+import rabbit from './assets/rabbit.webp'
+import './App.css'
 
-import CutieRabbitImage from './image/CutieRabbit.png';
-
-function App() {
-  const [posts, setPosts] = useState([]);
-  const [content, setContent] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const text = content.trim();
-    if (!text) return;
-    setPosts([{ id: Date.now(), text }, ...posts]);
-    setContent('');
-  };
-
-  const handleDelete = (id) => {
-    setPosts(posts.filter((post) => post.id !== id));
-  };
-
-  return (
-    <>
-      <CssBaseline />
-      <Container maxWidth="sm" sx={{ mt: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mb: 2,
-          }}
-        >
-          <Typography variant="h4" component="h1" gutterBottom>
-            うさぎの投稿アプリ
-          </Typography>
-          <Box
-            component="img"
-            src={CutieRabbitImage}
-            alt="Cutie Rabbit"
-            sx={{
-              height: 150,
-              width: 150,
-              ml: 2,
-            }}
-          />
-        </Box>
-
-        <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4 }}>
-          <TextField
-            label="投稿内容"
-            placeholder="ここに投稿内容を入力してください"
-            multiline
-            rows={1}
-            fullWidth
-            variant="outlined"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            sx={{
-              height: 60,
-              '& .MuiInputBase-root': {
-                height: '100%',
-                alignItems: 'center',
-              },
-              '& .MuiInputBase-inputMultiline': {
-                padding: 0,
-              },
-            }}
-          />
-
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            endIcon={<SendIcon />}
-            sx={{ mt: 2 }}
-            fullWidth
-          >
-            投稿する
-          </Button>
-        </Box>
-
-        <Stack spacing={2}>
-          {posts.map((post) => (
-            <Card
-              key={post.id}
-              variant="outlined"
-              sx={{
-                width: '100%',
-                '& .MuiCardContent-root': {
-                  py: 2,
-                  px: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                },
-              }}
-            >
-              <CardContent>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    flex: 1,
-                  }}
-                >
-                  {post.text}
-                </Typography>
-
-                <IconButton
-                  aria-label="delete"
-                  color="error"
-                  onClick={() => handleDelete(post.id)}
-                  sx={{
-                    p: 0.5,
-                    ml: 1,
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
-      </Container>
-    </>
-  );
+// 保存データは書き換えられている可能性があるので、形をチェックしてから使う
+function loadPosts() {
+  try {
+    const data = JSON.parse(localStorage.getItem('posts'))
+    if (!Array.isArray(data)) return []
+    return data.filter(
+      (post) => typeof post?.id === 'string' && typeof post?.text === 'string',
+    )
+  } catch {
+    return []
+  }
 }
 
-export default App;
+function App() {
+  const [posts, setPosts] = useState(loadPosts)
+
+  // posts が変わるたびにブラウザへ保存（再読み込みしても消えない）
+  useEffect(() => {
+    localStorage.setItem('posts', JSON.stringify(posts))
+  }, [posts])
+
+  // 投稿ボタンが押されたら呼ばれる。入力欄は React が自動で空にしてくれる
+  function addPost(formData) {
+    const text = formData.get('text').trim()
+    if (!text) return
+    setPosts((prev) => [{ id: crypto.randomUUID(), text }, ...prev])
+  }
+
+  function deletePost(id) {
+    setPosts((prev) => prev.filter((post) => post.id !== id))
+  }
+
+  // Ctrl + Enter（Mac は ⌘ + Enter）でも投稿できるようにする
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.currentTarget.form.requestSubmit()
+    }
+  }
+
+  return (
+    <main className="app">
+      <header className="header">
+        <img src={rabbit} alt="" width="64" height="64" />
+        <h1>うさぎの投稿アプリ</h1>
+      </header>
+
+      <form className="post-form" action={addPost}>
+        <label htmlFor="text">いまどうしてる？</label>
+        <textarea
+          id="text"
+          name="text"
+          placeholder="ここに入力"
+          maxLength={140}
+          required
+          onKeyDown={handleKeyDown}
+        />
+        <button type="submit">投稿する</button>
+      </form>
+
+      {posts.length === 0 && <p className="empty">まだ投稿はありません</p>}
+
+      <ul className="posts">
+        {posts.map((post) => (
+          <li key={post.id} className="post">
+            {/* {} で表示した文字は React が自動でエスケープするので XSS にならない */}
+            <p>{post.text}</p>
+            <button
+              type="button"
+              aria-label="削除"
+              onClick={() => deletePost(post.id)}
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+      </ul>
+    </main>
+  )
+}
+
+export default App
