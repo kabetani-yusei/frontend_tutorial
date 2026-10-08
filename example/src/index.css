@@ -1,0 +1,29 @@
+/* ページ全体の設定 */
+:root {
+  color-scheme: light dark; /* OS の設定に合わせてライト / ダークを自動で切り替え */
+  --bg: light-dark(#f6f7f9, #16181d);
+  --card: light-dark(#ffffff, #22252c);
+  --text: light-dark(#1f2328, #e6e8eb);
+  --muted: light-dark(#6b7280, #9aa1ab);
+  --border: light-dark(#e3e5e8, #343944);
+  --accent: #d6336c;
+
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* キーボード操作中だけフォーカス枠を表示 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
